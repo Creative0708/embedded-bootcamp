@@ -122,7 +122,7 @@ int main(void)
 	  HAL_Delay(10);
 
 	  HAL_GPIO_WritePin(GPIOB, GPIO_PIN_8, GPIO_PIN_RESET);
-	  HAL_SPI_TransmitReceive(&hspi1, pTxData, pRxData, sizeof(adcspi_tx), UINT32_MAX);
+	  HAL_SPI_TransmitReceive(&hspi1, adcspi_tx, adcspi_rx, sizeof(adcspi_tx), UINT32_MAX);
 	  HAL_GPIO_WritePin(GPIOB, GPIO_PIN_8, GPIO_PIN_SET);
 
 	  // MCP3008 p22: reconstruct raw value read from ADC
