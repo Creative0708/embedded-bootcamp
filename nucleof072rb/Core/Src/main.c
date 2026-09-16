@@ -27,6 +27,9 @@
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 
+#include "stm32f0xx_hal_spi.h"
+#include "stm32f0xx_hal_tim.h"
+
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -93,16 +96,43 @@ int main(void)
   MX_TIM1_Init();
   /* USER CODE BEGIN 2 */
 
+  // MCP3008 p19: "If the device was powered up with the CS pin low, it must be brought high and back low to initiate communication."
+  HAL_GPIO_WritePin(GPIOB, GPIO_PIN_8, GPIO_PIN_SET);
+
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
-  while (1)
-  {
+
+  // MCP3008 p22: the chip requires 24 bits for both tx and rx (aka 3 bytes)
+  uint8_t adcspi_tx[3] = {0}, adcspi_rx[3];
+
+  // MCP3008 p22: tx start bit
+  adcspi_tx[0] = 1U;
+
+  const uint8_t ADC_CTRL_SGL_DIFF = 0x1U; 	// SGL/DIFF, 1 for single mode
+  const uint8_t ADC_CTRL_D = 0x0U; 			// D2/D1/D0, 0x0 for selecting CH0
+
+  // MCP3008 p22: tx control byte
+  adcspi_tx[1] = ADC_CTRL_SGL_DIFF << 7 | ADC_CTRL_D << 4;
+
+  while (1) {
+	  HAL_Delay(10);
+
+	  HAL_GPIO_WritePin(GPIOB, GPIO_PIN_8, GPIO_PIN_RESET);
+	  HAL_SPI_TransmitReceive(&hspi1, pTxData, pRxData, sizeof(adcspi_tx), UINT32_MAX);
+	  HAL_GPIO_WritePin(GPIOB, GPIO_PIN_8, GPIO_PIN_SET);
+
+	  // MCP3008 p22: reconstruct raw value read from ADC
+	  uint32_t adc_raw_value = (adcspi_rx[1] & 0x03) << 8 | adcspi_rx[2];
+
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
   }
+
+  HAL_SPI_MspDeInit(&hspi1);
+  HAL_TIM_PWM_MspDeInit(&htim1);
   /* USER CODE END 3 */
 }
 
@@ -176,8 +206,7 @@ void Error_Handler(void)
 void assert_failed(uint8_t *file, uint32_t line)
 {
   /* USER CODE BEGIN 6 */
-  /* User can add his own implementation to report the file name and line number,
-     ex: printf("Wrong parameters value: file %s on line %d\r\n", file, line) */
+	printf("Wrong parameters value: file %s on line %d\r\n", file, line) */
   /* USER CODE END 6 */
 }
 #endif /* USE_FULL_ASSERT */
