@@ -116,6 +116,8 @@ int main(void)
   // MCP3008 p22: tx control byte
   adcspi_tx[1] = ADC_CTRL_SGL_DIFF << 7 | ADC_CTRL_D << 4;
 
+  HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_1);
+
   while (1) {
 	  HAL_Delay(10);
 
@@ -125,6 +127,13 @@ int main(void)
 
 	  // MCP3008 p22: reconstruct raw value read from ADC
 	  uint32_t adc_raw_value = (adcspi_rx[1] & 0x03) << 8 | adcspi_rx[2];
+
+	  // according to the datasheet, adc_raw_value is mapped to 0-1023 corresponding to 0-VREF.
+	  // VREF is 3.3v per the schematic, so map 0-1023 to 0-htim1.Init.Period
+
+	  uint32_t tim1_pwm_compare = adc_raw_value * htim1.Init.Period / 1024;
+
+	  __HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_1, tim1_pwm_compare);
 
     /* USER CODE END WHILE */
 
