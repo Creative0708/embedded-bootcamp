@@ -121,8 +121,10 @@ int main(void)
 
   HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_1);
 
+  const uint32_t tim1_adjusted_period = htim1.Init.Period / 20;
+
   while (1) {
-	  HAL_Delay(10);
+	  HAL_Delay(10); // note: delay is at the start so the ADC has time to recognise CS pulled high
 
 	  HAL_GPIO_WritePin(GPIOB, GPIO_PIN_8, GPIO_PIN_RESET);
 	  HAL_SPI_TransmitReceive(&hspi1, adcspi_tx, adcspi_rx, sizeof(adcspi_tx), UINT32_MAX);
@@ -132,9 +134,14 @@ int main(void)
 	  uint32_t adc_raw_value = (adcspi_rx[1] & 0x03) << 8 | adcspi_rx[2];
 
 	  // according to the datasheet, adc_raw_value is mapped to 0-1023 corresponding to 0-VREF.
-	  // VREF is 3.3v per the schematic, so map 0-1023 to 0-htim1.Init.Period
+	  // VREF is 3.3v per the schematic (and we want 5-10% duty cycle), so map 0-1023 to htim1.Init.Period/20-htim1.Init.Period/10
+	  // since our STM32F072RB doesn't have an FPU, we'll use integer arithmetic here.
+	  // also, 1024 is used because dividing by a power of two is equivalent to a bitshift which the compiler knows how to optimise
 
-	  uint32_t tim1_pwm_compare = adc_raw_value * htim1.Init.Period / 1024;
+	  // tim1_adjusted_period = Period/20
+	  // -> adc_raw_value * tim1_adjusted_period / 1024 						ranges from 0-Period/20
+	  // -> adc_raw_value * tim1_adjusted_period / 1024 + tim1_adjusted_period 	ranges from Period/20-Period/10 aka 5%-10% duty cycle
+	  uint32_t tim1_pwm_compare = adc_raw_value * tim1_adjusted_period / 1024 + tim1_adjusted_period;
 
 	  __HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_1, tim1_pwm_compare);
 
