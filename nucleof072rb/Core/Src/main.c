@@ -99,6 +99,9 @@ int main(void)
   // MCP3008 p19: "If the device was powered up with the CS pin low, it must be brought high and back low to initiate communication."
   HAL_GPIO_WritePin(GPIOB, GPIO_PIN_8, GPIO_PIN_SET);
 
+  // and set the timer duty cycle to 0 to not have indeterminate duty cycles before the first ADC read finishes
+  __HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_1, tim1_pwm_0);
+
   /* USER CODE END 2 */
 
   /* Infinite loop */
