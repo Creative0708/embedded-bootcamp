@@ -127,7 +127,7 @@ int main(void)
 	  HAL_Delay(10); // note: delay is at the start so the ADC has time to recognise CS pulled high
 
 	  HAL_GPIO_WritePin(GPIOB, GPIO_PIN_8, GPIO_PIN_RESET);
-	  HAL_SPI_TransmitReceive(&hspi1, adcspi_tx, adcspi_rx, sizeof(adcspi_tx), UINT32_MAX);
+	  HAL_SPI_TransmitReceive(&hspi1, adcspi_tx, adcspi_rx, sizeof(adcspi_tx), HAL_MAX_DELAY);
 	  HAL_GPIO_WritePin(GPIOB, GPIO_PIN_8, GPIO_PIN_SET);
 
 	  // MCP3008 p22: reconstruct raw value read from ADC
